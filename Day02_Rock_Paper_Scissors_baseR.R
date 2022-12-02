@@ -26,7 +26,7 @@ sum(mat_one[cbind(opp_one, me_one)]) + sum(scores_one[me_one])
 
 
 # puzzle 2
-#   
+#   15702
 
 dict_two <- 
   c(A = "rock", B = "paper", C = "scissors",
