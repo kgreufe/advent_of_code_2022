@@ -1,0 +1,36 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, paged.print = FALSE)
+options(scipen = 20)
+
+library(tidyverse)
+```
+
+# Day 02: Rock Paper Scissors
+
+## Puzzle 1
+
+
+
+```{r input}
+```
+
+
+```{r puzzle1}
+```
+
+
+
+
+## Puzzle 2
+
+
+
+```{r puzzle2}
+```
