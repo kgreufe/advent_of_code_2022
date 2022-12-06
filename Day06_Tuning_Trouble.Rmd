@@ -45,16 +45,37 @@ Here are a few more examples:
 `nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg`: first marker after character `10`
 `zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw`: first marker after character `11`
 
-How many characters need to be processed before the first start-of-packet marker is detected?
+**How many characters need to be processed before the first start-of-packet marker is detected?**
 
 ```{r input}
+input_raw <- read_lines("input data/day06_input.txt")
+
+input <- str_split_1(input_raw, "")
 ```
 
 
 ```{r puzzle1}
+for (i in seq_along(input)) {
+  
+  if (i %in% c(1, 2, 3)) next
+  
+  .c <-  
+    input[(i - 3):i] %>% 
+    table()
+  
+  if (length(.c == 4) && (sum(.c == 1) == 4) ) {
+    
+    sop <<- i
+    break
+    
+  }
+  
+}
+
+sop
 ```
 
-
+`1093` characters need to be processed before the first start-of-packet marker is detected
 
 
 ## Puzzle 2
