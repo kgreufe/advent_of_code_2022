@@ -83,22 +83,28 @@ is_visible <- function(.m, .i, .j) {
   .val <- .m[.i, .j]
   
   # up
-  if ( all(.m[1:(.i -1), .j] < .val ) ) 1L
-  
-  # down
-  else if ( all(.m[(.i + 1):nrow(.m), .j] < .val)  ) 1L
-  
-  # left
-  else if ( all(.m[.i, 1:(.j - 1)] < .val) ) 1L
-  
-  # right
-  else if ( all(.m[.i, (.j + 1):ncol(.m)] < .val) ) 1L
-  
-  else 0L
+  if ( all(.m[1:(.i -1), .j] < .val ) ) {
+    1L
+    
+    # down
+  } else if ( all(.m[(.i + 1):nrow(.m), .j] < .val)  ) {
+    1L
+    
+    # left
+  } else if ( all(.m[.i, 1:(.j - 1)] < .val) ) {
+    1L
+    
+    # right
+  } else if ( all(.m[.i, (.j + 1):ncol(.m)] < .val) ) {
+    1L
+    
+  } else {
+    0L
+  }
 }
 
 
-process_matrix <- function(.mat) {
+process_matrix_one <- function(.mat) {
   
   .v <- matrix(0L, 
                nrow = nrow(.mat), 
@@ -127,7 +133,7 @@ process_matrix <- function(.mat) {
 }
 
 
-sum(process_matrix(.mat = input))
+sum(process_matrix_one(.mat = input))
 
 ```
 
@@ -137,7 +143,119 @@ sum(process_matrix(.mat = input))
 
 ## Puzzle 2
 
+Content with the amount of tree cover available, the Elves just need to know the best spot to build their tree house: they would like to be able to see a lot of *trees*.
 
+To measure the viewing distance from a given tree, look up, down, left, and right from that tree; stop if you reach an edge or at the first tree that is the same height or taller than the tree under consideration. (If a tree is right on the edge, at least one of its viewing distances will be zero.)
+
+The Elves don't care about distant trees taller than those found by the rules above; the proposed tree house has large eaves to keep it dry, so they wouldn't be able to see higher than the tree house anyway.
+
+In the example above, consider the middle `5` in the second row:
+
+```
+30373
+25512
+65332
+33549
+35390
+```
+
+- Looking up, its view is not blocked; it can see 1 tree (of height 3).
+- Looking left, its view is blocked immediately; it can see only 1 tree (of height 5, right next to it).
+- Looking right, its view is not blocked; it can see 2 trees.
+- Looking down, its view is blocked eventually; it can see 2 trees (one of height 3, then the tree of height 5 that blocks its view).
+
+A tree's scenic score is found by multiplying together its viewing distance in each of the four directions. For this tree, this is `4` (found by multiplying 1 * 1 * 2 * 2).
+
+However, you can do even better: consider the tree of height `5` in the middle of the fourth row:
+
+```
+30373
+25512
+65332
+33549
+35390
+```
+
+- Looking up, its view is blocked at 2 trees (by another tree with a height of 5).
+- Looking left, its view is not blocked; it can see 2 trees.
+- Looking down, its view is also not blocked; it can see 1 tree.
+- Looking right, its view is blocked at 2 trees (by a massive tree of height 9).
+
+This tree's scenic score is `8` (2 * 2 * 1 * 2); this is the ideal spot for the tree house.
+
+**Consider each tree on your map. What is the highest scenic score possible for any tree?**
 
 ```{r puzzle2}
+
+calc_scenic_score <- function(.m, .i, .j) {
+  
+  .val <- .m[.i, .j]
+  
+  # check up
+  if (.i == 1) {
+    .u <- 0
+    
+  } else {
+    .ucheck <- .m[(.i - 1):1, .j]
+    .ulimit <- which(.ucheck >= .val)
+    .u <- ifelse(length(.ulimit) == 0, length(.ucheck), .ulimit[[1]])
+  }
+  
+  # check down
+  if (.i == nrow(.m)) {
+    .d <- 0
+    
+  } else {
+    .dcheck <- .m[(.i + 1):nrow(.m), .j]
+    .dlimit <- which(.dcheck >= .val)
+    .d <- ifelse(length(.dlimit) == 0, length(.dcheck), .dlimit[[1]])
+  }
+  
+  # check left
+  if (.j == 1) {
+    .l <- 0
+    
+  } else {
+    .lcheck <- .m[.i, (.j - 1):1]
+    .llimit <- which(.lcheck >= .val)
+    .l <- ifelse(length(.llimit) == 0, length(.lcheck), .llimit[[1]])
+  }
+  
+  # check right
+  if (.j == ncol(.m)) {
+    .r <- 0
+    
+  } else {
+    .rcheck <- .m[.i, (.j + 1):ncol(.m)]
+    .rlimit <- which(.rcheck >= .val)
+    .r <- ifelse(length(.rlimit) == 0, length(.rcheck), .rlimit[[1]])
+  }
+  
+  
+  return(.u * .d * .l * .r)
+}
+
+
+
+
+process_matrix_two <- function(.mat) {
+  
+  .v <- matrix(0, 
+               nrow = nrow(.mat), 
+               ncol = ncol(.mat))
+  
+  for (i in seq_len(nrow(.mat))) {
+    for (j in seq_len(ncol(.mat))) {
+      
+      .v[i, j] <- calc_scenic_score(.mat, i, j)
+      
+    }
+  }
+  
+  .v
+}
+
+max(process_matrix_two(input))
 ```
+
+`291840` is the maximum scenic score for my input. 
