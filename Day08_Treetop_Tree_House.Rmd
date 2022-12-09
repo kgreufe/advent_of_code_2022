@@ -1,0 +1,143 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, paged.print = FALSE)
+options(scipen = 20)
+
+library(tidyverse)
+```
+
+# Day 08: Treetop Tree House
+
+## Puzzle 1
+
+The expedition comes across a peculiar patch of tall trees all planted carefully in a grid. The Elves explain that a previous expedition planted these trees as a reforestation effort. Now, they're curious if this would be a good location for a tree house.
+
+First, determine whether there is enough tree cover here to keep a tree house *hidden*. To do this, you need to count the number of trees that are *visible from outside the grid* when looking directly along a row or column.
+
+The Elves have already launched a quadcopter to generate a map with the height of each tree (your puzzle input). For example:
+
+```
+30373
+25512
+65332
+33549
+35390
+```
+
+Each tree is represented as a single digit whose value is its height, where `0` is the shortest and `9` is the tallest.
+
+A tree is *visible* if all of the other trees between it and an edge of the grid are *shorter* than it. Only consider trees in the same row or column; that is, only look up, down, left, or right from any given tree.
+
+All of the trees around the edge of the grid are *visible* - since they are already on the edge, there are no trees to block the view. In this example, that only leaves the *interior nine trees* to consider:
+
+- The top-left 5 is *visible* from the left and top. (It isn't visible from the right or bottom since other trees of height 5 are in the way.)
+
+- The top-middle 5 is *visible* from the top and right.
+
+- The top-right 1 is not visible from any direction; for it to be visible, there would need to only be trees of height 0 between it and an edge.
+
+- The left-middle 5 is *visible*, but only from the right.
+
+- The center 3 is not visible from any direction; for it to be visible, there would need to be only trees of at most height 2 between it and an edge.
+
+- The right-middle 3 is *visible* from the right.
+
+- In the bottom row, the middle 5 is *visible*, but the 3 and 4 are not.
+
+With 16 trees visible on the edge and another 5 visible in the interior, a total of *21* trees are visible in this arrangement.
+
+**Consider your map; how many trees are visible from outside the grid?**
+
+```{r input}
+raw_test <- read_lines("30373\n25512\n65332\n33549\n35390")
+
+raw_input <- read_lines("input data/day08_input.txt")
+
+
+process_input <- function(.i) {
+  
+  .n <- str_length(.i[[1]])
+  
+  str_split(.i, "") %>% 
+    unlist() %>% 
+    parse_number() %>% 
+    matrix(ncol = .n, byrow = TRUE)
+}
+
+test <- process_input(raw_test)
+input <- process_input(raw_input)
+
+```
+
+
+```{r puzzle1}
+
+is_visible <- function(.m, .i, .j) {
+  
+  .val <- .m[.i, .j]
+  
+  # up
+  if ( all(.m[1:(.i -1), .j] < .val ) ) 1L
+  
+  # down
+  else if ( all(.m[(.i + 1):nrow(.m), .j] < .val)  ) 1L
+  
+  # left
+  else if ( all(.m[.i, 1:(.j - 1)] < .val) ) 1L
+  
+  # right
+  else if ( all(.m[.i, (.j + 1):ncol(.m)] < .val) ) 1L
+  
+  else 0L
+}
+
+
+process_matrix <- function(.mat) {
+  
+  .v <- matrix(0L, 
+               nrow = nrow(.mat), 
+               ncol = ncol(.mat))
+  
+  # mark all outside values as "visible"
+  .v[1, ] <- 1L
+  .v[, 1] <- 1L
+  .v[nrow(.v), ] <- 1L
+  .v[, ncol(.v)] <- 1L
+  
+  
+  
+  
+  for ( i in seq_len(nrow(.mat)) ) {
+    for( j in seq_len(ncol(.mat)) ) {
+      
+      if (.v[i, j] == 1L) next
+      
+      .v[i, j] <- is_visible(.mat, i, j)
+      
+    }
+  }
+  
+  return(.v)
+}
+
+
+sum(process_matrix(.mat = input))
+
+```
+
+
+`1829` trees are visible from outside the grid.
+
+
+## Puzzle 2
+
+
+
+```{r puzzle2}
+```
