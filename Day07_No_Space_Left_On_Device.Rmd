@@ -60,13 +60,13 @@ The filesystem consists of a tree of files (plain data) and directories (which c
 Within the terminal output, lines that begin with `$` are *commands you executed*, very much like some modern computers:
 
 - `cd` means *change directory*. This changes which directory is the current directory, but the specific result depends on the argument:
-    - `cd x` moves *in* one level: it looks in the current directory for the directory named x and makes it the current directory.
-    - `cd ..` moves *out* one level: it finds the directory that contains the current directory, then makes that directory the current directory.
-    - `cd /` switches the current directory to the outermost directory, `/`.
-    
+- `cd x` moves *in* one level: it looks in the current directory for the directory named x and makes it the current directory.
+- `cd ..` moves *out* one level: it finds the directory that contains the current directory, then makes that directory the current directory.
+- `cd /` switches the current directory to the outermost directory, `/`.
+
 - `ls` means *list*. It prints out all of the files and directories immediately contained by the current directory:
-    - `123 abc` means that the current directory contains a file named `abc` with size `123`.
-    - `dir xyz` means that the current directory contains a directory named `xyz`.
+- `123 abc` means that the current directory contains a file named `abc` with size `123`.
+- `dir xyz` means that the current directory contains a directory named `xyz`.
 
 Given the commands and output in the example above, you can determine that the filesystem looks visually like this:
 
@@ -86,33 +86,166 @@ Given the commands and output in the example above, you can determine that the f
     - d.ext (file, size=5626152)
     - k (file, size=7214296)
 ```    
-    
+
 Here, there are four directories: / (the outermost directory), a and d (which are in /), and e (which is in a). These directories also contain files of various sizes.
 
 Since the disk is full, your first step should probably be to find directories that are good candidates for deletion. To do this, you need to determine the *total size of each directory*. The total size of a directory is the sum of the sizes of the files it contains, directly or indirectly. (Directories themselves do not count as having any intrinsic size.)
 
 The total sizes of the directories above can be found as follows:
 
-  - The total size of directory `e` is `584` because it contains a single file `i` of size `584` and no other directories.
-  
-  - The directory `a` has total size `94853` because it contains files `f` (size 29116), `g` (size 2557), and `h.lst` (size 62596), plus file `i` indirectly (a contains e which contains i).
-  
-  - Directory `d` has total size `24933642`.
-  
-  - As the outermost directory, `/` contains every file. Its total size is `48381165`, the sum of the size of every file.
-  
+- The total size of directory `e` is `584` because it contains a single file `i` of size `584` and no other directories.
+
+- The directory `a` has total size `94853` because it contains files `f` (size 29116), `g` (size 2557), and `h.lst` (size 62596), plus file `i` indirectly (a contains e which contains i).
+
+- Directory `d` has total size `24933642`.
+
+- As the outermost directory, `/` contains every file. Its total size is `48381165`, the sum of the size of every file.
+
 To begin, find all of the directories with a total size of at most `100000`, then calculate the sum of their total sizes. In the example above, these directories are `a` and `e`; the sum of their total sizes is `95437` (94853 + 584). (As in this example, this process can count files more than once!)
 
 **Find all of the directories with a total size of at most 100000. What is the sum of the total sizes of those directories?**
 
 ```{r input}
+test <- read_lines(file = "$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k")
+
+input <- read_lines(file = "input data/day07_input.txt")
 ```
 
 
-```{r puzzle1}
+
+
+```{r puzzle1 v2}
+puzone <- input
+
+.n <- length(puzone)
+
+result <- 
+  tibble(cmd = vector("character", .n), 
+         path = vector("character", .n), 
+         file = vector("character", .n), 
+         size = vector("double", .n))
+
+path <- vector("character")
+
+for (i in seq_along(puzone)) {
+  
+  .v <- puzone[[i]]
+  
+  if (.v == "$ cd /" ) path <- {
+    "root/"
+    
+  } else if (str_detect(.v, "^\\$ cd \\.\\.")) {
+    .l <- tail(str_locate_all(path, "/")[[1]][, "end"], 2)[[1]]
+    path <- str_sub(path, end = .l)
+    
+  } else if (str_detect(.v, "^\\$ cd ")) {
+    path <- str_c(path, str_replace(.v, "^\\$ cd ", ""), "/")
+    
+  }
+  
+  if (str_sub(.v, end = 1) %in% as.character(0:9)) {
+    .split <- str_split_1(.v, " ")
+    .size <- as.double(.split[[1]])
+    .file <- .split[[2]]
+    
+    result[i, "file"] <- .file
+    result[i, "size"] <- .size
+    
+  }
+  
+  result[i, "cmd"] <- .v
+  result[i, "path"] <- path
+  
+}
+
+
+.df <- 
+  result %>% 
+  filter(size > 0) %>% 
+  select(-cmd)
+
+nsep <- max(str_count(result[["path"]], "/")) + 1
+
+.df <- 
+  .df %>% 
+  separate(col = path, into = letters[1:nsep], sep = "/", fill = "right")
+
+puzone <- 
+  tibble(name = vector("character"), 
+         size = vector("double"))
+
+
+
+for (i in seq_len(nsep - 1) ){
+  
+  .col <- as.name(letters[[i]])
+  
+  .nextcol <- as.name(letters[[i + 1]])
+  
+  .filter <- 
+    .df %>% 
+    group_by(!!.col) %>% 
+    filter(!is.na(!!.col)) %>% 
+    filter(!!.col != "")
+  
+  if (nrow(.filter) == 0 ) {
+    .df <- 
+      .df %>% 
+      mutate("{.nextcol}" := if_else(!!.nextcol == "" | is.na(!!.nextcol), 
+                                     "", 
+                                     str_c(!!.col, "/", !!.nextcol)) ) %>% 
+      select(-(!!.col))
+    
+    next
+  }
+  
+  .s <- 
+    .filter %>% 
+    summarize(size = sum(size), 
+              .groups = "drop") %>% 
+    rename(name = !!.col)
+  
+  puzone <- bind_rows(puzone, .s)
+  
+  if (as.character(.nextcol) %in% letters[1:nsep]) {
+    .df <- 
+      .df %>% 
+      mutate("{.nextcol}" := if_else(!!.nextcol == "" | is.na(!!.nextcol), 
+                                     "", 
+                                     str_c(!!.col, "/", !!.nextcol)) ) %>% 
+      select(-(!!.col))
+  }
+  
+}
+
+puzone %>% 
+  filter(size <= 100000) %>% 
+  summarize(total = sum(size))
 ```
 
-
+After finding all of the directories with a total size of at most 100000, the sum of the total sizes of those directories from my input is `1307902`.
 
 
 ## Puzzle 2
