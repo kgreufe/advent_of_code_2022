@@ -227,13 +227,49 @@ The sum of these signal strengths is *13140*.
 **What is the sum of these six signal strengths?**
 
 ```{r input}
+test1 <- 
+  read_lines("noop
+addx 3
+addx -5")
+  
+test2 <- read_lines("input data/day10_test_input.txt")
+
+input <- read_lines("input data/day10_input.txt")
 ```
 
 
 ```{r puzzle1}
+puzzleone <- input
+
+puzone_eval <- 
+  puzzleone %>% 
+  prepend("start 1") %>% 
+  tibble(cmd = .) %>% 
+  separate(col = cmd, 
+           into = c("cmd", "amt"), 
+           sep = " ", 
+           convert = TRUE, 
+           fill = "right") %>% 
+  mutate(amt = replace_na(amt, 0L), 
+         n = if_else(cmd == "addx", 2L, 1L), 
+         grp = row_number()) %>% 
+  uncount(weights = n) %>% 
+  group_by(grp) %>% 
+  mutate(last_step = row_number() == n()) %>% 
+  ungroup() %>% 
+  mutate(step = row_number() - 1L, 
+         val = if_else(cmd != "noop" & last_step, amt, 0L), 
+         cume = cumsum(val), 
+         during = lag(cume, default = 0L))
+
+steps_to_eval <- seq(20, 220, 40)
+
+puzone_eval$during[puzone_eval$step %in% steps_to_eval] %>% 
+  {. * steps_to_eval} %>% 
+  sum()
 ```
 
-
+The sum of my six signal strengths is `14240`
 
 
 ## Puzzle 2
